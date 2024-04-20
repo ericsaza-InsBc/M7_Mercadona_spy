@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->integer('external_id')->unique(); // ID desde la API
+            $table->integer('parent_id')->nullable(); // ID de la categoría padre
+            $table->string('parent_name')->nullable(); // Nombre de la categoría padre
             $table->timestamps();
         });
     }
