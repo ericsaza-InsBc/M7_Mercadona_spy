@@ -84,7 +84,35 @@ class ProductController extends Controller
                 // Obtenemos los datos de la respuesta y los decodificamos
                 $data = json_decode($response->getBody()->getContents(), true);
 
-                return response()->json(['message' => 'Categories importades correctament']);
+                // Recorremos los productos de la categoria
+                foreach ($categories as $category) {
+                    $response = $client->request('GET', 'https://tienda.mercadona.es/api/categories/' . $category->external_id);
+
+                    if ($response->getStatusCode() == 200) {
+                        $data = json_decode($response->getBody()->getContents(), true);
+
+                        foreach ($data['categories'] as $subcategory) { // Cambio de nombre de la variable aquí
+                            foreach ($subcategory['products'] as $product) {
+                                $productExists = Product::where('external_id', $product['id'])->first();
+
+                                if (!$productExists) {
+                                    Product::create([
+                                        'product_id' => $product['id'],
+                                        'name' => str_replace(',', ' ', $product['display_name']),
+                                        'slug' => $product['slug'],
+                                        'price' => $product['price_instructions']['unit_price'],
+                                        'image_url' => $product['thumbnail'],
+                                        'share_url' => $product['share_url'],
+                                    ]);
+                                }
+                            }
+                        }
+                    } else {
+                        return response()->json(['error' => 'Error al obtener las categorías de la API de Mercadona'], 500);
+                    }
+                }
+
+                return response()->json(['message' => 'Categorías importadas correctamente']);
             } else {
                 // En caso de error en la solicitud, retornamos un mensaje de error
                 return response()->json(['error' => 'Error al obtindre les categories de la API de Mercadona'], 500);
